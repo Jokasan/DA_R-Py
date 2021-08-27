@@ -1,0 +1,84 @@
+---
+title: "Towards a unified approach R and Python"
+author: "Nils Indreiten"
+output:
+  html_document:
+    theme:
+      yeti
+    code_folding: show
+---
+
+
+![Diagram of penguin head with indication of bill length and bill depth.](https://allisonhorst.github.io/palmerpenguins/reference/figures/culmen_depth.png){width="523"}
+
+```{r setup, include = FALSE}
+library(tidyverse)
+library(palmerpenguins)
+library(reticulate)
+penguin_df <- penguins
+options(reticulate.repl.quiet = TRUE)
+```
+
+The code for this `python` example, has been adapted from an article by [Ekta Sharma](https://towardsdatascience.com/plotly-pandas-for-the-palmer-penguins-f5cdab3c16c8) on the Palmer Penguins dataset.
+
+```{python}
+import pandas as pd
+import os
+
+# add the R df into Python
+penguins_df = r.penguin_df
+```
+
+### Lets explore the data
+
+Lets take a quick look at the data using `describe()`, this will give us an indication of the variables and their respective
+values:
+
+```{python}
+penguins_df[["species", "sex", "body_mass_g", "flipper_length_mm", "bill_length_mm"]].dropna().describe(include='all')
+```
+
+------------------------------------------------------------------------
+
+### Deeper Dive
+
+Lets take a closer look into the data.
+
+Grouping the penguins according to species demonstrates a particular relationship between weight an flipper length, where Adelie female penguins appear
+to be the lightest and have the shortest flippers.
+
+```{python, warning = FALSE, message = FALSE}
+(penguins_df
+.dropna()
+.groupby(["species", "sex"])
+.agg({"body_mass_g": "mean", "flipper_length_mm": "mean", "sex": "count"})
+.sort_index()
+)
+```
+
+It seems that the _Gentoo_ is the largest penguin species. We can also 
+take a closer look at their distribution along with the overall 
+distribution:
+
+```{python}
+larger = penguins_df[penguins_df.species=="Gentoo"].dropna()
+larger
+```
+
+
+### Plot Section
+
+Let's move on to some plots,this time using ggplot for visualising the
+overall distribution of body mass for the Gentoo species:
+
+```{r}
+penguin_plot <- py$larger %>% 
+filter(!is.na(sex)) %>% 
+  ggplot(aes(body_mass_g, fill = sex)) + 
+  geom_density(color = "white", alpha = 0.5) +
+   scale_fill_manual(values = c("darkorange","purple")) +
+  labs(x = "Body Mass (g)")+
+  theme_minimal()
+
+ penguin_plot
+```
